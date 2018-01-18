@@ -3,24 +3,151 @@
 <head>
 	<meta charset="UTF-8">
 	<title>AJAX Giphy Creator</title>
-
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+  <style type="text/css">
+    button,
+    div,
+    form,
+    input {
+      margin: 10px;
+    }
+  </style>
 </head>
 <body>
-  <div id="buttons-view"></div>
-  <form id="emotion-form">
-      <label for="emotion-input">Add a emotion Bro</label>
+  <div class="container">
+    <h1>See your emotions come to life with just a couple clicks!</h1>
+    <!-- Rendered Buttons will go here -->
+    <div id="buttons-view"></div> <br> <br>
+    
+    <!-- Form to create an emotion giphy-->
+    <form id="emotion-form">
+      <label for="emotion-input">Add a emotion: </label>
       <input type="text" id="emotion-input">
       <br>
 
       <!-- Button triggers new emotion to be added -->
       <input id="add-emotion" type="submit" value="Add an emotion">
     </form>
-  <div id="gifs-appear-here">
+    <!-- results from the search will be added here -->
+    <div id="gifs-appear-here"></div>
   </div>
-	
-</body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script src="https://code.jquery.com/jquery.js"></script>
-<script type="text/javascript" src="assets/app.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script type="text/javascript">
+  	//Initial array of emotions
+    var emotions = ["TFW", "SMH", "LOL", "Boy bye", "Groovy", "Eye roll", "Happy"];
+    // Function for adding JSON content for each button into the div
+    function displayGiphyInfo() {
+      var emotion = $(this).attr("data-emotion");
+      // Constructing a queryURL using the emotion name
+      var queryURL = "https://api.giphy.com/v1/gifs/search?q=" +
+        emotion + "&api_key=FfTV66LfxjGtANy63jKzKGoadso1MHaB&limit=10";
 
+      // Performing an AJAX request with the queryURL
+      $.ajax({
+          url: queryURL,
+          method: "GET"
+        })
+        // After data comes back from the request
+        .then(function(response) {
+          console.log(queryURL);
+
+          console.log(response);
+          // storing the data from the AJAX request in the results variable
+          var results = response.data;
+
+          // Looping through each result item
+          for (var i = 0; i < results.length; i++) {
+
+            // Creating and storing a div tag
+            var emotionDiv = $("<div class='item'>"); 
+
+            //Creating a variable to hold the giphy ratings
+            var rating = results[i].rating;    
+
+            // Creating a paragraph tag with the result item's rating
+            var p = $("<p>").text("Rating: " + rating);
+            
+            // Creating and storing an image tag
+            var emoImage = $("<img>");
+            // Setting the src attribute of the image to a property pulled off the result item
+            // Giving attributes and getting information from each button pushed
+            emoImage.addClass("gif");
+            emoImage.attr("src", results[i].images.original_still.url);
+            emoImage.attr("data-animate", results[i].images.original.url);
+            emoImage.attr("data-still", results[i].images.original_still.url);
+            emoImage.attr("data-state", "still");
+
+            // Appending the paragraph and image to the emotionDiv
+            emotionDiv.append(p);
+            emotionDiv.append(emoImage);   
+
+          // Prependng the emotionDiv to the HTML page in the "#gifs-appear-here" div
+          $("#gifs-appear-here").prepend(emotionDiv);   
+          //disply buttons
+          renderButtons();
+          } 
+        });
+      }
+    // Function for displaying emotion data
+    function renderButtons() {
+      
+      // Deleting the emotions prior to adding new emotions
+      // (this is necessary otherwise you will have repeat buttons)
+      $("#buttons-view").empty();
+
+      // Looping through the array of emotions
+      for (var i = 0; i < emotions.length; i++) {
+
+        // Then dynamicaly generating buttons for each emotion in the array
+        // This code $("<button>") is all jQuery needs to create the beginning and end tag. (<button></button>)
+        var a = $("<button>");
+        // Adding a class of emotion-btn to our button
+        a.addClass("emotion-btn");
+        // Adding a data-attribute
+        a.attr("data-emotion", emotions[i]);
+        // Providing the initial button text
+        a.text(emotions[i]);
+        // Adding the button to the buttons-view div
+        $("#buttons-view").append(a);
+      }
+    }
+
+    //onclick event to animate gifs
+    $("#gifs-appear-here").on("click", ".gif", function(){
+      //Set the value of the attribute on our HTML element
+      var state = $(this).attr("data-state");
+      //If clicked image is still, update its src attribute to what its data-animate value is.
+      if (state === "still") {
+      //Then, set the image's data-state to animate
+        $(this).attr("src", $(this).attr("data-animate"));
+        $(this).attr("data-state", "animate");
+      //Else set src to data-still value
+      } else if (state === "animate") {
+        $(this).attr("src", $(this).attr("data-still"));
+        $(this).attr("data-state", "still");
+      }
+    });
+
+    // This function handles events where a emotion button is clicked
+    $("#add-emotion").on("click", function(event) {
+      event.preventDefault();
+      // This line grabs the input from the textbox
+      var emotion = $("#emotion-input").val().trim();
+      
+      // Adding emotion from the textbox to our array
+      emotions.push(emotion);
+      console.log(emotions);
+      
+      // Calling renderButtons which handles the processing of our emotion array
+      renderButtons();
+    });
+
+    // Adding a click event listener to all elements with a class of "emotion-btn"
+    $(document).on("click", ".emotion-btn", displayGiphyInfo);
+
+    // Calling the renderButtons function to display the intial buttons
+    renderButtons();
+  </script>
+</body>
 </html>
